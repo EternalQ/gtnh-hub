@@ -1,7 +1,10 @@
 package server
 
 import (
+	"bufio"
+	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 
 	"github.com/EternalQ/gtnh-hub/internal/chat"
@@ -35,6 +38,14 @@ type responseWriter struct {
 func (rw *responseWriter) WriteHeader(code int) {
 	rw.statusCode = code
 	rw.ResponseWriter.WriteHeader(code)
+}
+
+func (rw *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := rw.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, fmt.Errorf("ResponseWriter does not implement http.Hijacker")
+	}
+	return h.Hijack()
 }
 
 func mwLogger(next http.Handler) http.Handler {
