@@ -55,6 +55,7 @@ func (s *Server) dsHandler(sess *discordgo.Session, m *discordgo.MessageCreate) 
 	}
 	if strings.HasPrefix(m.Content, "!ping") {
 		sess.ChannelMessageSend(m.ChannelID, "Pong! 🏓")
+		return
 	}
 
 	s.chat.Send(chat.Message{

@@ -8,8 +8,10 @@ import (
 type Discord struct {
 	webhookId    string
 	webhookToken string
+	webhookChan  string
 	avaUrl       string
-	sess         *discordgo.Session
+
+	sess *discordgo.Session
 }
 
 func NewDiscord(token, whId, whToken, avaUrl string) (*Discord, error) {
@@ -23,7 +25,18 @@ func NewDiscord(token, whId, whToken, avaUrl string) (*Discord, error) {
 		return nil, err
 	}
 
-	return &Discord{whId, whToken, avaUrl, dg}, nil
+	wh, err := dg.Webhook(whId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Discord{
+		webhookId:    whId,
+		webhookToken: whToken,
+		webhookChan:  wh.ChannelID,
+		avaUrl:       avaUrl,
+		sess:         dg,
+	}, nil
 }
 
 func (d *Discord) Setup(

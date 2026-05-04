@@ -50,7 +50,7 @@ func main() {
 	srv := server.NewServer(ds, hub)
 
 	httpSrv := &http.Server{
-		Addr:         port,
+		Addr:         ":" + port,
 		Handler:      srv.Routes(),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
