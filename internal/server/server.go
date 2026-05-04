@@ -25,7 +25,7 @@ func NewServer(ds *discord.Discord, hub *chat.Hub) *Server {
 		ds:   ds,
 	}
 
-	ds.Setup(s.dsReady, s.dsHandler, s.dsDisconnect)
+	ds.Setup(s.dsConnect, s.dsHandler, s.dsDisconnect)
 
 	return s
 }

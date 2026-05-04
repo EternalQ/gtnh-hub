@@ -44,11 +44,11 @@ func NewDiscord(token, whId, whToken, avaUrl string) (*Discord, error) {
 }
 
 func (d *Discord) Setup(
-	ready func(s *discordgo.Session, m *discordgo.Ready),
+	connect func(s *discordgo.Session, m *discordgo.Connect),
 	handler func(s *discordgo.Session, m *discordgo.MessageCreate),
 	disconnect func(s *discordgo.Session, m *discordgo.Disconnect),
 ) {
-	d.sess.AddHandler(ready)
+	d.sess.AddHandler(connect)
 	d.sess.AddHandler(handler)
 	d.sess.AddHandler(disconnect)
 }

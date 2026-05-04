@@ -8,7 +8,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func (s *Server) dsReady(sess *discordgo.Session, m *discordgo.Ready) {
+func (s *Server) dsConnect(sess *discordgo.Session, m *discordgo.Connect) {
 	ch := make(chan chat.Message, 100)
 
 	go func() {
