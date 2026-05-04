@@ -8,7 +8,7 @@ import (
 type Discord struct {
 	webhookId    string
 	webhookToken string
-	webhookChan  string
+	WebhookChan  string
 	avaUrl       string
 
 	sess *discordgo.Session
@@ -33,7 +33,7 @@ func NewDiscord(token, whId, whToken, avaUrl string) (*Discord, error) {
 	return &Discord{
 		webhookId:    whId,
 		webhookToken: whToken,
-		webhookChan:  wh.ChannelID,
+		WebhookChan:  wh.ChannelID,
 		avaUrl:       avaUrl,
 		sess:         dg,
 	}, nil

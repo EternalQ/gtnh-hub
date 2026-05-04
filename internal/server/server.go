@@ -50,7 +50,7 @@ func (s *Server) dsReady(sess *discordgo.Session, m *discordgo.Ready) {
 }
 
 func (s *Server) dsHandler(sess *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Author.ID == sess.State.User.ID {
+	if m.Author.ID == sess.State.User.ID || m.ChannelID != s.ds.WebhookChan {
 		return
 	}
 	if strings.HasPrefix(m.Content, "!ping") {
@@ -60,7 +60,7 @@ func (s *Server) dsHandler(sess *discordgo.Session, m *discordgo.MessageCreate) 
 
 	s.chat.Send(chat.Message{
 		Server: "Discord",
-		Sender: m.Author.Username,
+		Sender: m.Author.GlobalName,
 		Text:   m.Content,
 	})
 }
