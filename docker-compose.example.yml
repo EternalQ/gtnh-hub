@@ -1,0 +1,13 @@
+services:
+  hub:
+    image: eternalq/gtnh-hub
+    container_name: gtnh-hub
+    restart: unless-stopped
+    environment:
+      PORT: 5665
+      DS_BOT_TOKEN: bot_token
+      DS_WH_ID: webhook_id
+      DS_WH_TOKEN: webhook_token
+      PLAYER_AVA_URL: avatar_url
+    ports:
+      - 5665:5665
