@@ -1,6 +1,9 @@
 package discord
 
 import (
+	"log/slog"
+	"strings"
+
 	"github.com/EternalQ/gtnh-hub/internal/chat"
 	"github.com/bwmarrin/discordgo"
 )
@@ -29,6 +32,7 @@ func NewDiscord(token, whId, whToken, avaUrl string) (*Discord, error) {
 	if err != nil {
 		return nil, err
 	}
+	slog.Debug("Webhook created", slog.String("channel", wh.ChannelID))
 
 	return &Discord{
 		webhookId:    whId,
@@ -50,19 +54,34 @@ func (d *Discord) Setup(
 }
 
 func (d *Discord) Send(msg chat.Message) error {
+	var b strings.Builder
+
+	b.WriteByte('[')
+	b.WriteString(msg.Server)
+	b.WriteString("] ")
+	b.WriteString(msg.SenderFormatted)
+
+	sender := b.String()
+	ava := d.avaUrl + msg.Sender
+
 	p := &discordgo.WebhookParams{
 		Content:   msg.Text,
-		Username:  msg.Sender,
-		AvatarURL: d.avaUrl + msg.Sender,
+		Username:  sender,
+		AvatarURL: ava,
 	}
 
-	_, err := d.sess.WebhookExecute(d.webhookId, d.webhookToken, true, p, nil)
+	_, err := d.sess.WebhookExecute(d.webhookId, d.webhookToken, false, p)
 	if err != nil {
 		return err
 	}
+	slog.Debug("Discord send",
+		slog.String("Username", sender),
+		slog.String("Content", msg.Text),
+		slog.String("Avatar", ava))
 	return nil
 }
 
 func (d *Discord) Close() {
 	d.sess.Close()
+	slog.Info("Discord closed")
 }

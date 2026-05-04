@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,7 +17,9 @@ import (
 )
 
 var (
-	port         string
+	port  string
+	debug bool
+
 	dsBotToken   string
 	dsWhId       string
 	dsWhToken    string
@@ -26,10 +28,13 @@ var (
 
 func init() {
 	viper.SetDefault("PORT", "5665")
+	viper.SetDefault("DEBUG", false)
 
 	viper.AutomaticEnv()
 
 	port = viper.GetString("PORT")
+	debug = viper.GetBool("DEBUG")
+
 	dsBotToken = viper.GetString("DS_BOT_TOKEN")
 	dsWhId = viper.GetString("DS_WH_ID")
 	dsWhToken = viper.GetString("DS_WH_TOKEN")
@@ -41,9 +46,19 @@ func init() {
 }
 
 func main() {
+	level := slog.LevelInfo
+	if debug {
+		level = slog.LevelDebug
+	}
+	logH := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level:     level,
+		AddSource: debug,
+	})
+	slog.SetDefault(slog.New(logH))
+
 	ds, err := discord.NewDiscord(dsBotToken, dsWhId, dsWhToken, playerAvaUrl)
 	if err != nil {
-		fmt.Printf("Discord creation error: %s\n", err.Error())
+		slog.Error("Discord creation", slog.String("err", err.Error()))
 	}
 
 	hub := chat.NewHub()
@@ -57,7 +72,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("Server started on %s\n", port)
+		slog.Info("Server started", slog.String("port", port))
 		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Listen error: %v", err)
 		}
@@ -67,12 +82,12 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
 
-	log.Println("Graceful shutdown...")
+	slog.Info("Graceful shutdown...")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := httpSrv.Shutdown(ctx); err != nil {
-		log.Printf("Server Shutdown Failed: %s", err.Error())
+		slog.Error("Server Shutdown", slog.String("err", err.Error()))
 	}
 	hub.Close()
 	ds.Close()

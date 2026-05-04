@@ -1,7 +1,7 @@
 package server
 
 import (
-	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/EternalQ/gtnh-hub/internal/chat"
@@ -19,14 +19,14 @@ var upgrader = websocket.Upgrader{
 func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		fmt.Printf("Error while upgrating connection: %s\n", err.Error())
+		slog.Error("Upgrating connection", slog.String("err", err.Error()))
 		return
 	}
 
 	// get greeting
 	msg := &chat.Message{}
 	if err := conn.ReadJSON(msg); err != nil {
-		fmt.Printf("Error while reading greeting message: %s\n", err.Error())
+		slog.Error("Reading ws greeting message", slog.String("err", err.Error()))
 		conn.Close()
 	}
 	id := msg.Server
@@ -36,14 +36,15 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		for msg := range ch {
 			if err := conn.WriteJSON(msg); err != nil {
-				fmt.Printf("Error while writing message to server (%s): %s\n", id, err.Error())
+				slog.Error("Writing ws message",
+					slog.String("server", msg.Server),
+					slog.String("err", err.Error()))
 			}
 		}
 		conn.WriteMessage(
 			websocket.CloseMessage,
 			websocket.FormatCloseMessage(websocket.CloseNormalClosure, "Shutdown"),
 		)
-		fmt.Printf("Channel closed: %s\n", id)
 	}()
 
 	go func() {
@@ -58,9 +59,9 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 					websocket.CloseNormalClosure,
 					websocket.CloseNoStatusReceived,
 				) {
-					fmt.Printf("Connection %s closed: %s\n", id, err.Error())
+					slog.Info("Connection closed", slog.String("id", id), slog.String("err", err.Error()))
 				} else {
-					fmt.Printf("Error while reading server (%s) message: %s\n", id, err.Error())
+					slog.Error("Reading ws message", slog.String("server", id), slog.String("err", err.Error()))
 				}
 				return
 			}

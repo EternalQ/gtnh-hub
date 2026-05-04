@@ -1,12 +1,11 @@
 package server
 
 import (
-	"fmt"
-	"strings"
+	"log/slog"
+	"net/http"
 
 	"github.com/EternalQ/gtnh-hub/internal/chat"
 	"github.com/EternalQ/gtnh-hub/internal/discord"
-	"github.com/bwmarrin/discordgo"
 	"github.com/gorilla/mux"
 )
 
@@ -28,43 +27,37 @@ func NewServer(ds *discord.Discord, hub *chat.Hub) *Server {
 	return s
 }
 
-func (s *Server) Routes() *mux.Router {
-	s.r.HandleFunc("/gtnh-chat", s.handleChat)
-
-	return s.r
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
 }
 
-func (s *Server) dsReady(sess *discordgo.Session, m *discordgo.Ready) {
-	ch := make(chan chat.Message, 100)
-
-	go func() {
-		for msg := range ch {
-			if err := s.ds.Send(msg); err != nil {
-				fmt.Printf("Discord message send error: %s\n", err.Error())
-			}
-		}
-		fmt.Printf("Channel closed: Discord\n")
-	}()
-
-	s.chat.Register("Discord", ch)
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
 }
 
-func (s *Server) dsHandler(sess *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Author.ID == sess.State.User.ID || m.ChannelID != s.ds.WebhookChan {
-		return
-	}
-	if strings.HasPrefix(m.Content, "!ping") {
-		sess.ChannelMessageSend(m.ChannelID, "Pong! 🏓")
-		return
-	}
+func mwLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// start := time.Now()
 
-	s.chat.Send(chat.Message{
-		Server: "Discord",
-		Sender: m.Author.GlobalName,
-		Text:   m.Content,
+		wrappedWriter := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+
+		next.ServeHTTP(wrappedWriter, r)
+
+		slog.Info("incoming request",
+			slog.String("method", r.Method),
+			slog.String("path", r.URL.Path),
+			slog.Int("status", wrappedWriter.statusCode),
+			// slog.Duration("duration", time.Since(start)),
+			// slog.String("ip", r.RemoteAddr),
+		)
 	})
 }
 
-func (s *Server) dsDisconnect(sess *discordgo.Session, m *discordgo.Disconnect) {
-	s.chat.Unregister("Discord")
+func (s *Server) Routes() *mux.Router {
+	s.r.Use(mwLogger)
+	s.r.HandleFunc("/gtnh-chat", s.handleChat)
+
+	return s.r
 }

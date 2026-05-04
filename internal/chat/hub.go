@@ -1,14 +1,15 @@
 package chat
 
 import (
-	"fmt"
+	"log/slog"
 	"sync"
 )
 
 type Message struct {
-	Server string `json:"server"`
-	Sender string `json:"sender"`
-	Text   string `json:"text"`
+	Server          string `json:"server"`
+	Sender          string `json:"sender"`
+	SenderFormatted string `json:"senderFormatted"`
+	Text            string `json:"text"`
 }
 
 type Hub struct {
@@ -41,7 +42,7 @@ func (h *Hub) fanout() {
 			case v <- msg:
 			default:
 				// TODO: notify
-				fmt.Printf("Server channel %s overflowed, message skipped\n", id)
+				slog.Warn("Channel overflow", slog.String("id", id))
 			}
 		}
 		h.mu.RUnlock()
@@ -54,11 +55,16 @@ func (h *Hub) Register(id string, ch chan Message) {
 		h.mu.Lock()
 		h.m[id] = ch
 		h.mu.Unlock()
+		slog.Info("Channel registered", slog.String("id", id))
 	}
 }
 
 func (h *Hub) Send(msg Message) {
 	h.in <- msg
+	slog.Debug("Message for broadcast",
+		slog.String("server", msg.Server),
+		slog.String("sender", msg.Sender),
+		slog.String("text", msg.Text))
 }
 
 // Close channel and remove from broadcast
@@ -68,6 +74,7 @@ func (h *Hub) Unregister(id string) {
 	if c, ok := h.m[id]; ok {
 		close(c)
 		delete(h.m, id)
+		slog.Info("Channel removed", slog.String("id", id))
 	}
 }
 
@@ -79,4 +86,5 @@ func (h *Hub) Close() {
 		close(c)
 		delete(h.m, k)
 	}
+	slog.Info("All hub channels closed")
 }
