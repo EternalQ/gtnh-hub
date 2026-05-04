@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/EternalQ/gtnh-hub/internal/chat"
+	"github.com/EternalQ/gtnh-hub/internal/util"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -24,7 +25,7 @@ func NewDiscord(token, whId, whToken, avaUrl string) (*Discord, error) {
 	}
 
 	dg.Identify.Intents = discordgo.IntentsGuildMessages
-	
+
 	wh, err := dg.Webhook(whId)
 	if err != nil {
 		return nil, err
@@ -57,9 +58,9 @@ func (d *Discord) Send(msg chat.Message) error {
 	b.WriteByte('[')
 	b.WriteString(msg.Server)
 	b.WriteString("] ")
-	b.WriteString(msg.SenderFormatted)
-
+	b.WriteString(util.CleanMinecraftTags(msg.SenderFormatted))
 	sender := b.String()
+
 	ava := d.avaUrl + msg.Sender
 
 	p := &discordgo.WebhookParams{

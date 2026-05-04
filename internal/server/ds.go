@@ -24,7 +24,9 @@ func (s *Server) dsConnect(sess *discordgo.Session, m *discordgo.Connect) {
 }
 
 func (s *Server) dsHandler(sess *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Author.ID == sess.State.User.ID || m.ChannelID != s.ds.WebhookChan {
+	if m.Author.ID == sess.State.User.ID ||
+		m.ChannelID != s.ds.WebhookChan ||
+		m.WebhookID != "" {
 		return
 	}
 	if strings.HasPrefix(m.Content, "!ping") {
