@@ -62,7 +62,10 @@ func main() {
 	}
 
 	hub := chat.NewHub()
-	srv := server.NewServer(ds, hub)
+	srv, err := server.NewServer(ds, hub)
+	if err != nil {
+		log.Fatalf("Server creation: %s", err.Error())
+	}
 
 	httpSrv := &http.Server{
 		Addr:         ":" + port,

@@ -18,16 +18,18 @@ type Server struct {
 	ds   *discord.Discord
 }
 
-func NewServer(ds *discord.Discord, hub *chat.Hub) *Server {
+func NewServer(ds *discord.Discord, hub *chat.Hub) (*Server, error) {
 	s := &Server{
 		chat: hub,
 		r:    mux.NewRouter(),
 		ds:   ds,
 	}
 
-	ds.Setup(s.dsConnect, s.dsHandler, s.dsDisconnect)
+	if err := ds.Setup(s.dsConnect, s.dsHandler, s.dsDisconnect); err != nil {
+		return nil, err
+	}
 
-	return s
+	return s, nil
 }
 
 type responseWriter struct {

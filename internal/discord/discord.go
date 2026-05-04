@@ -24,10 +24,7 @@ func NewDiscord(token, whId, whToken, avaUrl string) (*Discord, error) {
 	}
 
 	dg.Identify.Intents = discordgo.IntentsGuildMessages
-	if err := dg.Open(); err != nil {
-		return nil, err
-	}
-
+	
 	wh, err := dg.Webhook(whId)
 	if err != nil {
 		return nil, err
@@ -47,10 +44,11 @@ func (d *Discord) Setup(
 	connect func(s *discordgo.Session, m *discordgo.Connect),
 	handler func(s *discordgo.Session, m *discordgo.MessageCreate),
 	disconnect func(s *discordgo.Session, m *discordgo.Disconnect),
-) {
+) error {
 	d.sess.AddHandler(connect)
 	d.sess.AddHandler(handler)
 	d.sess.AddHandler(disconnect)
+	return d.sess.Open()
 }
 
 func (d *Discord) Send(msg chat.Message) error {
