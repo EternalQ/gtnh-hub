@@ -30,6 +30,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		conn.Close()
 	}
 	id := msg.Server
+	s.chat.Send(chat.Message{Server: id, Sender: "", Text: "[" + id + "] сервер включился!"})
 
 	ch := make(chan chat.Message, 100)
 
@@ -55,13 +56,15 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 			if err := conn.ReadJSON(&msg); err != nil {
 				if websocket.IsCloseError(
 					err,
-					websocket.CloseGoingAway,
 					websocket.CloseNormalClosure,
+					websocket.CloseGoingAway,
 					websocket.CloseNoStatusReceived,
 				) {
 					slog.Info("Connection closed", slog.String("id", id), slog.String("err", err.Error()))
+					s.chat.Send(chat.Message{Server: id, Sender: "", Text: "[" + id + "] сервер выключился"})
 				} else {
 					slog.Error("Reading ws message", slog.String("server", id), slog.String("err", err.Error()))
+					s.chat.Send(chat.Message{Server: id, Sender: "", Text: "[" + id + "] сервер (или соединение) крашнулся("})
 				}
 				return
 			}

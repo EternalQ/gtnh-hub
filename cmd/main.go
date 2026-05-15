@@ -53,6 +53,16 @@ func main() {
 	logH := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level:     level,
 		AddSource: debug,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey {
+				t := a.Value.Time().In(time.FixedZone("GMT+3", 3*60*60))
+				if debug {
+					return slog.Time(slog.TimeKey, t)
+				}
+				return slog.String(slog.TimeKey, t.Format("2006-01-02 15:04:05"))
+			}
+			return a
+		},
 	})
 	slog.SetDefault(slog.New(logH))
 

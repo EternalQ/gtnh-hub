@@ -53,8 +53,12 @@ func (d *Discord) Setup(
 }
 
 func (d *Discord) Send(msg chat.Message) error {
-	var b strings.Builder
+	if msg.Sender == "" {
+		_, err := d.sess.ChannelMessageSend(d.WebhookChan, msg.Text)
+		return err
+	}
 
+	var b strings.Builder
 	b.WriteByte('[')
 	b.WriteString(msg.Server)
 	b.WriteString("] ")
