@@ -30,6 +30,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		conn.Close()
 	}
 	id := msg.Server
+	// TODO: take message from config
 	s.chat.Send(chat.Message{Server: id, Sender: "", Text: "[" + id + "] сервер включился!"})
 
 	ch := make(chan chat.Message, 100)

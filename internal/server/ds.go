@@ -34,10 +34,13 @@ func (s *Server) dsHandler(sess *discordgo.Session, m *discordgo.MessageCreate) 
 		return
 	}
 
+	// TODO: check role and add [A] for admins
+
 	s.chat.Send(chat.Message{
-		Server: "Discord",
-		Sender: m.Author.GlobalName,
-		Text:   m.Content,
+		Server:          "Discord",
+		Sender:          m.Author.GlobalName,
+		SenderFormatted: m.Author.GlobalName,
+		Text:            m.Content,
 	})
 }
 
