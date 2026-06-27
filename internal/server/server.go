@@ -7,22 +7,25 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/EternalQ/gtnh-hub/internal/chat"
 	"github.com/EternalQ/gtnh-hub/internal/discord"
+	"github.com/EternalQ/gtnh-hub/internal/game"
+	"github.com/EternalQ/gtnh-hub/internal/hub"
 	"github.com/gorilla/mux"
 )
 
 type Server struct {
 	r    *mux.Router
-	chat *chat.Hub
+	hub  *hub.Hub
 	ds   *discord.Discord
+	game *game.Instance
 }
 
-func NewServer(ds *discord.Discord, hub *chat.Hub) (*Server, error) {
+func NewServer(ds *discord.Discord, hub *hub.Hub) (*Server, error) {
 	s := &Server{
-		chat: hub,
+		hub:  hub,
 		r:    mux.NewRouter(),
 		ds:   ds,
+		game: game.NewInstance(),
 	}
 
 	if err := ds.Setup(s.dsConnect, s.dsHandler, s.dsDisconnect); err != nil {
@@ -70,7 +73,7 @@ func mwLogger(next http.Handler) http.Handler {
 
 func (s *Server) Routes() *mux.Router {
 	s.r.Use(mwLogger)
-	s.r.HandleFunc("/gtnh-chat", s.handleChat)
+	s.r.HandleFunc("/ws/gtnh", s.handleGtnh)
 
 	return s.r
 }

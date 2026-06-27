@@ -1,16 +1,10 @@
-package chat
+package hub
 
 import (
+	"encoding/json"
 	"log/slog"
 	"sync"
 )
-
-type Message struct {
-	Server          string `json:"server"`
-	Sender          string `json:"sender"`
-	SenderFormatted string `json:"senderFormatted"`
-	Text            string `json:"text"`
-}
 
 type Hub struct {
 	m  map[string]chan Message
@@ -35,7 +29,7 @@ func (h *Hub) fanout() {
 	for msg := range h.in {
 		h.mu.RLock()
 		for id, v := range h.m {
-			if msg.Server == id {
+			if msg.Origin == id {
 				continue
 			}
 			select {
@@ -59,12 +53,29 @@ func (h *Hub) Register(id string, ch chan Message) {
 	}
 }
 
+func (h *Hub) SendRaw(origin, action string, payload any) {
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		slog.Error("marshal payload error on Send", slog.String("err", err.Error()))
+		return
+	}
+
+	h.in <- Message{
+		Origin:  origin,
+		Action:  action,
+		Payload: json.RawMessage(payloadBytes),
+	}
+
+	slog.Debug("Message for broadcast",
+		slog.String("source", origin),
+		slog.String("action", action))
+}
+
 func (h *Hub) Send(msg Message) {
 	h.in <- msg
 	slog.Debug("Message for broadcast",
-		slog.String("server", msg.Server),
-		slog.String("sender", msg.Sender),
-		slog.String("text", msg.Text))
+		slog.String("source", msg.Origin),
+		slog.String("action", msg.Action))
 }
 
 // Close channel and remove from broadcast

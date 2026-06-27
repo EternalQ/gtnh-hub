@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/EternalQ/gtnh-hub/internal/chat"
+	"github.com/EternalQ/gtnh-hub/internal/hub"
 	"github.com/EternalQ/gtnh-hub/internal/util"
 	"github.com/bwmarrin/discordgo"
 )
@@ -52,7 +52,7 @@ func (d *Discord) Setup(
 	return d.sess.Open()
 }
 
-func (d *Discord) Send(msg chat.Message) error {
+func (d *Discord) Send(source string, msg hub.ChatMessage) error {
 	if msg.Sender == "" {
 		_, err := d.sess.ChannelMessageSend(d.WebhookChan, msg.Text)
 		return err
@@ -60,7 +60,7 @@ func (d *Discord) Send(msg chat.Message) error {
 
 	var b strings.Builder
 	b.WriteByte('[')
-	b.WriteString(msg.Server)
+	b.WriteString(source)
 	b.WriteString("] ")
 	b.WriteString(util.CleanMinecraftTags(msg.SenderFormatted))
 	sender := b.String()

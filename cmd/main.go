@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/EternalQ/gtnh-hub/internal/chat"
+	"github.com/EternalQ/gtnh-hub/internal/hub"
 	"github.com/EternalQ/gtnh-hub/internal/discord"
 	"github.com/EternalQ/gtnh-hub/internal/server"
 	"github.com/spf13/viper"
@@ -71,7 +71,7 @@ func main() {
 		slog.Error("Discord creation", slog.String("err", err.Error()))
 	}
 
-	hub := chat.NewHub()
+	hub := hub.NewHub()
 	srv, err := server.NewServer(ds, hub)
 	if err != nil {
 		log.Fatalf("Server creation: %s", err.Error())
