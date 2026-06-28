@@ -63,7 +63,11 @@ func (s *Server) dsHandler(sess *discordgo.Session, m *discordgo.MessageCreate) 
 
 func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCreate) {
 	if !slices.Contains(m.Member.Roles, s.ds.AdminRoleId) {
-		sess.ChannelMessageSendReply(s.ds.WebhookChan, "Недостаточно прав", m.MessageReference)
+		slog.Debug("declined", slog.Any("roles", m.Member.Roles))
+		_, err := sess.ChannelMessageSendReply(s.ds.WebhookChan, "Недостаточно прав", m.MessageReference)
+		if err != nil {
+			slog.Error("Discord commands reject", slog.String("err", err.Error()))
+		}
 		return
 	}
 
