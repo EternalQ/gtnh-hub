@@ -71,12 +71,13 @@ func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCrea
 	case "!ping":
 		sess.ChannelMessageSendReply(m.ChannelID, "Pong! 🏓", m.MessageReference)
 	case "!online":
+		slog.Debug("recieved")
 		fields := make([]*discordgo.MessageEmbedField, 0)
 		for id, server := range s.game.GameServers {
 			if server == nil {
 				fields = append(fields, &discordgo.MessageEmbedField{
 					Name:  fmt.Sprintf("%s - выключен", id),
-					Value: "\n",
+					Value: "Здесь пусто(",
 				})
 				continue
 			}
@@ -84,7 +85,7 @@ func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCrea
 			if len(server.OnlinePlayers) == 0 {
 				fields = append(fields, &discordgo.MessageEmbedField{
 					Name:  fmt.Sprintf("%s (%.2fTPS) - 0/%d", id, server.Tps, server.Slots),
-					Value: "Здесь пусто(\n",
+					Value: "Здесь пусто(",
 				})
 				continue
 			}
@@ -112,5 +113,7 @@ func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCrea
 		if err != nil {
 			slog.Error("Discord command error", slog.String("err", err.Error()))
 		}
+	default:
+		sess.ChannelMessageSendReply(m.ChannelID, "Команда не найдена: "+m.Content, m.MessageReference)
 	}
 }
