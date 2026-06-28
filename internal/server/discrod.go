@@ -64,14 +64,14 @@ func (s *Server) dsHandler(sess *discordgo.Session, m *discordgo.MessageCreate) 
 func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCreate) {
 	if !slices.Contains(m.Member.Roles, s.ds.AdminRoleId) {
 		sess.ChannelMessageSendReply(s.ds.WebhookChan, "Недостаточно прав", m.MessageReference)
+		return
 	}
 
 	switch m.Content {
 	case "!ping":
 		sess.ChannelMessageSendReply(m.ChannelID, "Pong! 🏓", m.MessageReference)
 	case "!online":
-		fields := make([]*discordgo.MessageEmbedField, len(s.game.GameServers))
-		var b strings.Builder
+		fields := make([]*discordgo.MessageEmbedField, 0)
 		for id, server := range s.game.GameServers {
 			if server == nil {
 				fields = append(fields, &discordgo.MessageEmbedField{
@@ -89,22 +89,17 @@ func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCrea
 				continue
 			}
 
-			b.Grow(server.Slots * 20)
+			list := fmt.Sprintln("Игроки:")
 			teams := make(map[string]struct{})
 			for _, player := range server.OnlinePlayers {
 				teams[player.Team] = struct{}{}
-				b.WriteString(player.Name)
-				b.WriteString(" — ")
-				b.WriteString(player.Team)
-				b.WriteString("\n")
+				list = fmt.Sprintf("%s\n%s - %s", list, player.Name, player.Team)
 			}
 
 			fields = append(fields, &discordgo.MessageEmbedField{
 				Name:  fmt.Sprintf("%s (%.2fTPS) - %d/%d", id, server.Tps, len(teams), server.Slots),
-				Value: b.String(),
+				Value: list,
 			})
-
-			b.Reset()
 		}
 
 		desc := fmt.Sprintf("Общий онлайн игрков: %d.\nСлоты на серверах измеряются в командах (teams)", s.game.GetAllPlayersCount())
