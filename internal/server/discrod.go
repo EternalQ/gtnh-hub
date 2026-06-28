@@ -78,8 +78,17 @@ func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCrea
 					Name:  fmt.Sprintf("%s - выключен", id),
 					Value: "\n",
 				})
+				continue
 			}
-			
+
+			if len(server.OnlinePlayers) == 0 {
+				fields = append(fields, &discordgo.MessageEmbedField{
+					Name:  fmt.Sprintf("%s (%.2fTPS) - 0/%d", id, server.Tps, server.Slots),
+					Value: "Здесь пусто(\n",
+				})
+				continue
+			}
+
 			b.Grow(server.Slots * 20)
 			teams := make(map[string]struct{})
 			for _, player := range server.OnlinePlayers {

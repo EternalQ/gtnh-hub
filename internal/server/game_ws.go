@@ -126,6 +126,8 @@ func (s *Server) handleGtnh(w http.ResponseWriter, r *http.Request) {
 				} else {
 					s.game.RemovePlayer(id, &p.Player)
 				}
+			case hub.ActionInfo:
+				// ignore
 			default:
 				slog.Warn("GTNH-ws unimplemented action handler", slog.String("action", msg.Action))
 			}
