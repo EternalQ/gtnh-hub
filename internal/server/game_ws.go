@@ -30,16 +30,16 @@ func (s *Server) handleGtnh(w http.ResponseWriter, r *http.Request) {
 		conn.Close()
 	}
 
-	if msg.Action != hub.ActionInit {
+	if msg.Action != hub.ActionInfo {
 		slog.Error("GTNH-ws first not-init message",
 			slog.String("origin", msg.Origin),
-			slog.String("acation", msg.Action),
+			slog.String("action", msg.Action),
 		)
-		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4001, "first message should be init"))
+		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4001, "first message should be info"))
 		return
 	}
 
-	var p hub.InitMessage
+	var p hub.InfoMessage
 	if err := json.Unmarshal(msg.Payload, &p); err != nil {
 		slog.Error("GTNH-ws init unmarshal", slog.String("err", err.Error()))
 		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4002, "bad payload"))
@@ -85,7 +85,7 @@ func (s *Server) handleGtnh(w http.ResponseWriter, r *http.Request) {
 					websocket.CloseGoingAway,
 					websocket.CloseNoStatusReceived,
 				) {
-					slog.Info("Connection closed", slog.String("id", id), slog.String("err", err.Error()))
+					slog.Info("Connection closed", slog.String("origin", id), slog.String("reason", err.Error()))
 					s.hub.SendRaw(
 						id,
 						hub.ActionChat,

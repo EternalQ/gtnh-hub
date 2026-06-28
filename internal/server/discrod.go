@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"github.com/EternalQ/gtnh-hub/internal/hub"
@@ -61,13 +62,25 @@ func (s *Server) dsHandler(sess *discordgo.Session, m *discordgo.MessageCreate) 
 }
 
 func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCreate) {
+	if !slices.Contains(m.Member.Roles, s.ds.AdminRoleId) {
+		sess.ChannelMessageSendReply(s.ds.WebhookChan, "Недостаточно прав", m.MessageReference)
+	}
+
 	switch m.Content {
 	case "!ping":
-		sess.ChannelMessageSend(m.ChannelID, "Pong! 🏓")
+		sess.ChannelMessageSendReply(m.ChannelID, "Pong! 🏓", m.MessageReference)
 	case "!online":
 		fields := make([]*discordgo.MessageEmbedField, len(s.game.GameServers))
 		var b strings.Builder
 		for id, server := range s.game.GameServers {
+			if server == nil {
+				fields = append(fields, &discordgo.MessageEmbedField{
+					Name:  fmt.Sprintf("%s - выключен", id),
+					Value: "\n",
+				})
+			}
+			
+			b.Grow(server.Slots * 20)
 			teams := make(map[string]struct{})
 			for _, player := range server.OnlinePlayers {
 				teams[player.Team] = struct{}{}
@@ -78,19 +91,22 @@ func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCrea
 			}
 
 			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:  fmt.Sprintf("%s - %d/%d", id, len(teams), server.Slots),
+				Name:  fmt.Sprintf("%s (%.2fTPS) - %d/%d", id, server.Tps, len(teams), server.Slots),
 				Value: b.String(),
 			})
 
 			b.Reset()
 		}
 
-		desc := fmt.Sprintf("Общий онлайн игрков: %d.\nСлоты на серверах изменяются в командах", s.game.GetAllPlayersCount())
+		desc := fmt.Sprintf("Общий онлайн игрков: %d.\nСлоты на серверах измеряются в командах (teams)", s.game.GetAllPlayersCount())
 		msg := &discordgo.MessageEmbed{
 			Title:       "Статус серверов",
 			Description: desc,
 			Fields:      fields,
 		}
-		sess.ChannelMessageSendEmbed(m.ChannelID, msg)
+		_, err := sess.ChannelMessageSendEmbed(m.ChannelID, msg)
+		if err != nil {
+			slog.Error("Discord command error", slog.String("err", err.Error()))
+		}
 	}
 }

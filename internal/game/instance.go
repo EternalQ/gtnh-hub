@@ -7,6 +7,8 @@ type Instance struct {
 type GameServer struct {
 	OnlinePlayers []*Player `json:"players"`
 	Slots         int       `json:"slots"`
+	Mspt          float32   `json:"mspt"`
+	Tps           float32   `json:"tps"`
 }
 
 func NewInstance() *Instance {

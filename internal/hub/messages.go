@@ -6,9 +6,9 @@ import (
 	"github.com/EternalQ/gtnh-hub/internal/game"
 )
 
+// Active acitons
 const (
-	// active acitons
-	ActionInit         = "init"
+	ActionInfo         = "info"
 	ActionChat         = "chat"
 	ActionPlayerLogged = "player.logged"
 )
@@ -20,7 +20,7 @@ type Message struct {
 	Payload json.RawMessage `json:"payload"`
 }
 
-type InitMessage struct {
+type InfoMessage struct {
 	game.GameServer
 }
 
@@ -33,6 +33,6 @@ type ChatMessage struct {
 type PlayerLoggedMessage struct {
 	game.Player
 
-	In        bool   `json:"in"`
-	Timestamp string `json:"timestamp"`
+	In        bool `json:"in"`
+	Timestamp int  `json:"timestamp"`
 }

@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/EternalQ/gtnh-hub/internal/hub"
 	"github.com/EternalQ/gtnh-hub/internal/discord"
+	"github.com/EternalQ/gtnh-hub/internal/hub"
 	"github.com/EternalQ/gtnh-hub/internal/server"
 	"github.com/spf13/viper"
 )
@@ -24,6 +24,7 @@ var (
 	dsWhId       string
 	dsWhToken    string
 	playerAvaUrl string
+	adminRoleId  string
 )
 
 func init() {
@@ -38,6 +39,7 @@ func init() {
 	dsBotToken = viper.GetString("DS_BOT_TOKEN")
 	dsWhId = viper.GetString("DS_WH_ID")
 	dsWhToken = viper.GetString("DS_WH_TOKEN")
+	adminRoleId = viper.GetString("DS_ADMIN_ROLE_ID")
 	playerAvaUrl = viper.GetString("PLAYER_AVA_URL")
 
 	if len(dsBotToken) == 0 || len(dsWhId) == 0 {
@@ -66,7 +68,7 @@ func main() {
 	})
 	slog.SetDefault(slog.New(logH))
 
-	ds, err := discord.NewDiscord(dsBotToken, dsWhId, dsWhToken, playerAvaUrl)
+	ds, err := discord.NewDiscord(dsBotToken, dsWhId, dsWhToken, playerAvaUrl, adminRoleId)
 	if err != nil {
 		slog.Error("Discord creation", slog.String("err", err.Error()))
 	}

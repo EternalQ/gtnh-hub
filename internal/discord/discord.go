@@ -10,15 +10,17 @@ import (
 )
 
 type Discord struct {
+	WebhookChan string
+	AdminRoleId string
+
 	webhookId    string
 	webhookToken string
-	WebhookChan  string
 	avaUrl       string
 
 	sess *discordgo.Session
 }
 
-func NewDiscord(token, whId, whToken, avaUrl string) (*Discord, error) {
+func NewDiscord(token, whId, whToken, avaUrl, adminRoleId string) (*Discord, error) {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, err
@@ -79,7 +81,7 @@ func (d *Discord) Send(source string, msg hub.ChatMessage) error {
 	}
 	slog.Debug("Discord send",
 		slog.String("Username", sender),
-		slog.String("Content", msg.Text),
+		slog.String("Content", util.CleanMinecraftTags(msg.Text)),
 		slog.String("Avatar", ava))
 	return nil
 }
