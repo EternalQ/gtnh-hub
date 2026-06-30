@@ -1,18 +1,42 @@
 package game
 
+import (
+	"encoding/json"
+	"sync"
+)
+
 type Instance struct {
-	GameServers map[string]*GameServer
+	mu        sync.Mutex
+	jsonCache []byte
+
+	GameServers map[string]*GameServer `json:"gameServers"`
 }
 
 type GameServer struct {
-	OnlinePlayers []*Player `json:"players"`
-	Slots         int       `json:"slots"`
-	Mspt          float32   `json:"mspt"`
-	Tps           float32   `json:"tps"`
+	OnlinePlayers []Player `json:"players"`
+	Slots         int      `json:"slots"`
+	Mspt          float32  `json:"mspt"`
+	Tps           float32  `json:"tps"`
 }
 
 func NewInstance() *Instance {
 	return &Instance{GameServers: make(map[string]*GameServer)}
+}
+
+func (i *Instance) GetJSON() []byte {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	buf := make([]byte, len(i.jsonCache))
+	copy(buf, i.jsonCache)
+	return buf
+}
+
+func (i *Instance) Copy() (*Instance, error) {
+	var new *Instance
+	if err := json.Unmarshal(i.GetJSON(), new); err != nil {
+		return nil, err
+	}
+	return new, nil
 }
 
 func (i *Instance) GetAllPlayersCount() int {
@@ -23,17 +47,16 @@ func (i *Instance) GetAllPlayersCount() int {
 	return count
 }
 
-func (i *Instance) AddPlayer(id string, player *Player) {
-	if i.GameServers[id].OnlinePlayers == nil {
-		i.GameServers[id].OnlinePlayers = make([]*Player, 8)
-	}
-	i.GameServers[id].OnlinePlayers = append(i.GameServers[id].OnlinePlayers, player)
-}
+func (i *Instance) SetServer(id string, server *GameServer) error {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	i.GameServers[id] = server
 
-func (in *Instance) RemovePlayer(id string, player *Player) {
-	for i, p := range in.GameServers[id].OnlinePlayers {
-		if p.Name == player.Name {
-			in.GameServers[id].OnlinePlayers = append(in.GameServers[id].OnlinePlayers[:i], in.GameServers[id].OnlinePlayers[i+1:]...)
-		}
+	data, err := json.Marshal(i)
+	if err != nil {
+		return err
 	}
+
+	i.jsonCache = data
+	return nil
 }

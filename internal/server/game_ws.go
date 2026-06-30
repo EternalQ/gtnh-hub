@@ -99,7 +99,7 @@ func (s *Server) handleGtnh(w http.ResponseWriter, r *http.Request) {
 					s.hub.SendRaw(
 						id,
 						hub.ActionChat,
-						&hub.ChatMessage{Sender: "", Text: "[" + id + "] сервер (или соединение) крашнулся("},
+						&hub.ChatMessage{Sender: "", Text: "[" + id + "] Что-то пошлое не так... Соединение с сервером потеряно."},
 					)
 				}
 				return
@@ -109,9 +109,9 @@ func (s *Server) handleGtnh(w http.ResponseWriter, r *http.Request) {
 			case hub.ActionChat:
 				s.hub.Send(msg)
 			case hub.ActionPlayerLogged:
-				s.hub.Send(msg)
-
-				var p hub.PlayerLoggedMessage
+				// ignore
+			case hub.ActionInfo:
+				var p hub.InfoMessage
 				if err := json.Unmarshal(msg.Payload, &p); err != nil {
 					slog.Error("GTNH-ws payload unmarshal",
 						slog.String("err", err.Error()),
@@ -120,14 +120,7 @@ func (s *Server) handleGtnh(w http.ResponseWriter, r *http.Request) {
 					conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4002, "bad payload"))
 					return
 				}
-
-				if p.In {
-					s.game.AddPlayer(id, &p.Player)
-				} else {
-					s.game.RemovePlayer(id, &p.Player)
-				}
-			case hub.ActionInfo:
-				// ignore
+				s.game.SetServer(msg.Origin, &p.GameServer)
 			default:
 				slog.Warn("GTNH-ws unimplemented action handler", slog.String("action", msg.Action))
 			}

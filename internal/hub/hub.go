@@ -96,6 +96,7 @@ func (h *Hub) Close() {
 	for k, c := range h.m {
 		close(c)
 		delete(h.m, k)
+		slog.Info("Channel closed", slog.String("id", k))
 	}
 	slog.Info("All hub channels closed")
 }

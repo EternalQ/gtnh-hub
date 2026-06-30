@@ -55,7 +55,7 @@ func (d *Discord) Setup(
 	return d.sess.Open()
 }
 
-func (d *Discord) Send(source string, msg hub.ChatMessage) error {
+func (d *Discord) SendChatMessage(source string, msg hub.ChatMessage) error {
 	if msg.Sender == "" {
 		_, err := d.sess.ChannelMessageSend(d.WebhookChan, msg.Text)
 		return err
@@ -71,7 +71,7 @@ func (d *Discord) Send(source string, msg hub.ChatMessage) error {
 	ava := d.avaUrl + msg.Sender
 
 	p := &discordgo.WebhookParams{
-		Content:   msg.Text,
+		Content:   util.CleanMinecraftTags(msg.Text),
 		Username:  sender,
 		AvatarURL: ava,
 	}

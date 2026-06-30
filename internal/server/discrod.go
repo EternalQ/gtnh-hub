@@ -22,7 +22,7 @@ func (s *Server) dsConnect(sess *discordgo.Session, m *discordgo.Connect) {
 				if err := json.Unmarshal(msg.Payload, &p); err != nil {
 					slog.Error("failed to unmarshal chat message payload ", slog.String("err", err.Error()))
 				}
-				if err := s.ds.Send(msg.Origin, p); err != nil {
+				if err := s.ds.SendChatMessage(msg.Origin, p); err != nil {
 					slog.Error("Discord send ", slog.String("err", err.Error()))
 				}
 			case hub.ActionPlayerLogged:
@@ -31,7 +31,6 @@ func (s *Server) dsConnect(sess *discordgo.Session, m *discordgo.Connect) {
 				slog.Warn("Discord message handler: Unimplemented action", slog.String("action", msg.Action))
 			}
 		}
-		slog.Info("Channel closed: Discord")
 	}()
 
 	s.hub.Register("Discord", ch)
@@ -47,6 +46,7 @@ func (s *Server) dsHandler(sess *discordgo.Session, m *discordgo.MessageCreate) 
 		m.WebhookID != "" {
 		return
 	}
+	
 	if strings.HasPrefix(m.Content, "!") {
 		s.handleCommand(sess, m)
 		return
@@ -63,8 +63,7 @@ func (s *Server) dsHandler(sess *discordgo.Session, m *discordgo.MessageCreate) 
 
 func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCreate) {
 	if !slices.Contains(m.Member.Roles, s.ds.AdminRoleId) {
-		slog.Debug("declined", slog.Any("roles", m.Member.Roles))
-		_, err := sess.ChannelMessageSendReply(s.ds.WebhookChan, "Недостаточно прав", m.MessageReference)
+		_, err := sess.ChannelMessageSendReply(s.ds.WebhookChan, "Недостаточно прав", m.Reference())
 		if err != nil {
 			slog.Error("Discord commands reject", slog.String("err", err.Error()))
 		}
@@ -73,11 +72,16 @@ func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCrea
 
 	switch m.Content {
 	case "!ping":
-		sess.ChannelMessageSendReply(m.ChannelID, "Pong! 🏓", m.MessageReference)
+		sess.ChannelMessageSendReply(m.ChannelID, "Pong! 🏓", m.Reference())
 	case "!online":
-		slog.Debug("recieved")
+		inst, err := s.game.Copy()
+		if err != nil {
+			sess.ChannelMessageSendReply(m.ChannelID, "Internal error. Check logs.", m.Reference())
+			slog.Error("Discord command handler", slog.String("command", m.Content), slog.String("err", err.Error()))
+			return
+		}
 		fields := make([]*discordgo.MessageEmbedField, 0)
-		for id, server := range s.game.GameServers {
+		for id, server := range inst.GameServers {
 			if server == nil {
 				fields = append(fields, &discordgo.MessageEmbedField{
 					Name:  fmt.Sprintf("%s - выключен", id),
@@ -88,13 +92,13 @@ func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCrea
 
 			if len(server.OnlinePlayers) == 0 {
 				fields = append(fields, &discordgo.MessageEmbedField{
-					Name:  fmt.Sprintf("%s (%.2fTPS) - 0/%d", id, server.Tps, server.Slots),
+					Name:  fmt.Sprintf("%s (%.2f TPS) - 0/%d", id, server.Tps, server.Slots),
 					Value: "Здесь пусто(",
 				})
 				continue
 			}
 
-			list := fmt.Sprintln("Игроки:")
+			list := fmt.Sprintf("%d игрок(-а, -ов):\n", len(server.OnlinePlayers))
 			teams := make(map[string]struct{})
 			for _, player := range server.OnlinePlayers {
 				teams[player.Team] = struct{}{}
@@ -102,19 +106,18 @@ func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCrea
 			}
 
 			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:  fmt.Sprintf("%s (%.2fTPS) - %d/%d", id, server.Tps, len(teams), server.Slots),
+				Name:  fmt.Sprintf("%s (%.2f TPS) - %d/%d", id, server.Tps, len(teams), server.Slots),
 				Value: list,
 			})
 		}
 
-		desc := fmt.Sprintf("Общий онлайн игрков: %d.\nСлоты на серверах измеряются в командах (teams)", s.game.GetAllPlayersCount())
+		desc := fmt.Sprintf("Общий онлайн игрков: %d.\nСлоты на серверах измеряются в командах (SU Teams)", s.game.GetAllPlayersCount())
 		msg := &discordgo.MessageEmbed{
 			Title:       "Статус серверов",
 			Description: desc,
 			Fields:      fields,
 		}
-		_, err := sess.ChannelMessageSendEmbed(m.ChannelID, msg)
-		if err != nil {
+		if _, err := sess.ChannelMessageSendEmbed(m.ChannelID, msg); err != nil {
 			slog.Error("Discord command error", slog.String("err", err.Error()))
 		}
 	default:
