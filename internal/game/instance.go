@@ -35,7 +35,7 @@ func (i *Instance) GetJSON() []byte {
 }
 
 func (i *Instance) Copy() (*Instance, error) {
-	var new *Instance
+	new := new(Instance)
 	if err := json.Unmarshal(i.GetJSON(), new); err != nil {
 		return nil, err
 	}
