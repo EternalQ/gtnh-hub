@@ -36,8 +36,10 @@ func NewDiscord(token, whId, whToken, avaUrl, adminRoleId, pinnedMsg string) (*D
 	slog.Debug("Webhook created", slog.String("channel", wh.ChannelID))
 
 	return &Discord{
-		AdminRoleId:  adminRoleId,
-		WebhookChan:  wh.ChannelID,
+		AdminRoleId: adminRoleId,
+		WebhookChan: wh.ChannelID,
+		PinnedMsg:   pinnedMsg,
+
 		webhookId:    whId,
 		webhookToken: whToken,
 		avaUrl:       avaUrl,
