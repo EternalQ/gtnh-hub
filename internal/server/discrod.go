@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/EternalQ/gtnh-hub/internal/hub"
 	"github.com/bwmarrin/discordgo"
@@ -46,7 +47,7 @@ func (s *Server) dsHandler(sess *discordgo.Session, m *discordgo.MessageCreate) 
 		m.WebhookID != "" {
 		return
 	}
-	
+
 	if strings.HasPrefix(m.Content, "!") {
 		s.handleCommand(sess, m)
 		return
@@ -61,23 +62,15 @@ func (s *Server) dsHandler(sess *discordgo.Session, m *discordgo.MessageCreate) 
 	})
 }
 
-func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCreate) {
-	if !slices.Contains(m.Member.Roles, s.ds.AdminRoleId) {
-		_, err := sess.ChannelMessageSendReply(s.ds.WebhookChan, "Недостаточно прав", m.Reference())
-		if err != nil {
-			slog.Error("Discord commands reject", slog.String("err", err.Error()))
-		}
-		return
-	}
+func (s *Server) onlineRefresher(sess *discordgo.Session, chanId, msgId string) {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
 
-	switch m.Content {
-	case "!ping":
-		sess.ChannelMessageSendReply(m.ChannelID, "Pong! 🏓", m.Reference())
-	case "!online":
+	for range ticker.C {
 		inst, err := s.game.Copy()
 		if err != nil {
-			sess.ChannelMessageSendReply(m.ChannelID, "Internal error. Check logs.", m.Reference())
-			slog.Error("Discord command handler", slog.String("command", m.Content), slog.String("err", err.Error()))
+			// TODO: notify
+			slog.Error("Discord command handler", slog.String("err", err.Error()))
 			return
 		}
 		fields := make([]*discordgo.MessageEmbedField, 0)
@@ -102,7 +95,7 @@ func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCrea
 			teams := make(map[string]struct{})
 			for _, player := range server.OnlinePlayers {
 				teams[player.Team] = struct{}{}
-				list = fmt.Sprintf("%s\n%s - %s", list, player.Name, player.Team)
+				list = fmt.Sprintf("%s\n%s - %s", list, player.NameFormatted, player.Team)
 			}
 
 			fields = append(fields, &discordgo.MessageEmbedField{
@@ -111,15 +104,34 @@ func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCrea
 			})
 		}
 
-		desc := fmt.Sprintf("Общий онлайн игрков: %d.\nСлоты на серверах измеряются в командах (SU Teams)", s.game.GetAllPlayersCount())
+		// TODO: take from config
+		desc := fmt.Sprintf("Общий онлайн игрков: %d.\nИнформация обновляется раз 10 сек.\nСлоты на серверах измеряются в командах (SU Teams).",
+			s.game.GetAllPlayersCount())
 		msg := &discordgo.MessageEmbed{
 			Title:       "Статус серверов",
 			Description: desc,
 			Fields:      fields,
 		}
-		if _, err := sess.ChannelMessageSendEmbed(m.ChannelID, msg); err != nil {
+		if _, err := sess.ChannelMessageEditEmbed(chanId, msgId, msg); err != nil {
 			slog.Error("Discord command error", slog.String("err", err.Error()))
 		}
+	}
+}
+
+func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCreate) {
+	slog.Info("Recieved discord command", slog.String("cmd", m.Content), slog.String("caller", m.Author.Username))
+	if !slices.Contains(m.Member.Roles, s.ds.AdminRoleId) {
+		_, err := sess.ChannelMessageSendReply(s.ds.WebhookChan, "Недостаточно прав", m.Reference())
+		if err != nil {
+			slog.Error("Discord commands reject", slog.String("err", err.Error()))
+		}
+		return
+	}
+
+	switch m.Content {
+	case "!ping":
+		sess.ChannelMessageSendReply(m.ChannelID, "Pong! 🏓", m.Reference())
+
 	default:
 		sess.ChannelMessageSendReply(m.ChannelID, "Команда не найдена: "+m.Content, m.MessageReference)
 	}

@@ -25,6 +25,7 @@ var (
 	dsWhToken    string
 	playerAvaUrl string
 	adminRoleId  string
+	dsPinnedMsg  string
 )
 
 func init() {
@@ -40,6 +41,7 @@ func init() {
 	dsWhId = viper.GetString("DS_WH_ID")
 	dsWhToken = viper.GetString("DS_WH_TOKEN")
 	adminRoleId = viper.GetString("DS_ADMIN_ROLE_ID")
+	dsPinnedMsg = viper.GetString("DS_PINNED_MSG")
 	playerAvaUrl = viper.GetString("PLAYER_AVA_URL")
 
 	if len(dsBotToken) == 0 || len(dsWhId) == 0 {
@@ -68,7 +70,7 @@ func main() {
 	})
 	slog.SetDefault(slog.New(logH))
 
-	ds, err := discord.NewDiscord(dsBotToken, dsWhId, dsWhToken, playerAvaUrl, adminRoleId)
+	ds, err := discord.NewDiscord(dsBotToken, dsWhId, dsWhToken, playerAvaUrl, adminRoleId, dsPinnedMsg)
 	if err != nil {
 		slog.Error("Discord creation", slog.String("err", err.Error()))
 	}

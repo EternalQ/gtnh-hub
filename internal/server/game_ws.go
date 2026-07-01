@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -49,7 +50,7 @@ func (s *Server) handleGtnh(w http.ResponseWriter, r *http.Request) {
 	s.game.GameServers[id] = &p.GameServer
 
 	// TODO: take message from config
-	s.hub.SendRaw(id, hub.ActionChat, &hub.ChatMessage{Sender: "", Text: "[" + id + "] сервер включился!"})
+	s.hub.SendRaw(id, hub.ActionChat, &hub.ChatMessage{Sender: "", Text: "[" + id + "] сервер подключен!"})
 
 	ch := make(chan hub.Message, 100)
 
@@ -85,11 +86,12 @@ func (s *Server) handleGtnh(w http.ResponseWriter, r *http.Request) {
 					websocket.CloseGoingAway,
 					websocket.CloseNoStatusReceived,
 				) {
+					e, _ := errors.AsType[*websocket.CloseError](err)
 					slog.Info("Connection closed", slog.String("origin", id), slog.String("reason", err.Error()))
 					s.hub.SendRaw(
 						id,
 						hub.ActionChat,
-						&hub.ChatMessage{Sender: "", Text: "[" + id + "] сервер выключился"},
+						&hub.ChatMessage{Sender: "", Text: "[" + id + "] сервер отключен от Хаба: " + e.Text},
 					)
 				} else {
 					slog.Error("GTNH-ws reading message",

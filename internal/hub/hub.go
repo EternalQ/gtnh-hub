@@ -94,6 +94,21 @@ func (h *Hub) Close() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	for k, c := range h.m {
+		payloadBytes, err := json.Marshal(&ChatMessage{
+			Sender:          "",
+			SenderFormatted: "",
+			Text:            "Хаб отключен",
+		})
+		if err != nil {
+			slog.Error("marshal payload error on Send", slog.String("err", err.Error()))
+			return
+		}
+
+		c <- Message{
+			Origin:  "Hub",
+			Action:  ActionChat,
+			Payload: json.RawMessage(payloadBytes),
+		}
 		close(c)
 		delete(h.m, k)
 		slog.Info("Channel closed", slog.String("id", k))

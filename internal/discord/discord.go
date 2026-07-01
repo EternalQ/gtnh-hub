@@ -12,6 +12,7 @@ import (
 type Discord struct {
 	WebhookChan string
 	AdminRoleId string
+	PinnedMsg   string
 
 	webhookId    string
 	webhookToken string
@@ -20,7 +21,7 @@ type Discord struct {
 	sess *discordgo.Session
 }
 
-func NewDiscord(token, whId, whToken, avaUrl, adminRoleId string) (*Discord, error) {
+func NewDiscord(token, whId, whToken, avaUrl, adminRoleId, pinnedMsg string) (*Discord, error) {
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, err
@@ -48,10 +49,12 @@ func (d *Discord) Setup(
 	connect func(s *discordgo.Session, m *discordgo.Connect),
 	handler func(s *discordgo.Session, m *discordgo.MessageCreate),
 	disconnect func(s *discordgo.Session, m *discordgo.Disconnect),
+	refresher func(s *discordgo.Session, chanId, msggId string),
 ) error {
 	d.sess.AddHandler(connect)
 	d.sess.AddHandler(handler)
 	d.sess.AddHandler(disconnect)
+	go refresher(d.sess, d.WebhookChan, d.PinnedMsg)
 	return d.sess.Open()
 }
 
