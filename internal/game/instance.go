@@ -20,7 +20,10 @@ type GameServer struct {
 }
 
 func NewInstance() *Instance {
-	return &Instance{GameServers: make(map[string]*GameServer)}
+	return &Instance{
+		jsonCache:   []byte("{}"),
+		GameServers: make(map[string]*GameServer),
+	}
 }
 
 func (i *Instance) GetJSON() []byte {
