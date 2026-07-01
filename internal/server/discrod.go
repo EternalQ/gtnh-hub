@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/EternalQ/gtnh-hub/internal/hub"
+	"github.com/EternalQ/gtnh-hub/internal/util"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -95,7 +96,7 @@ func (s *Server) onlineRefresher(sess *discordgo.Session, chanId, msgId string) 
 			teams := make(map[string]struct{})
 			for _, player := range server.OnlinePlayers {
 				teams[player.Team] = struct{}{}
-				list = fmt.Sprintf("%s\n%s - %s", list, player.NameFormatted, player.Team)
+				list = fmt.Sprintf("%s\n%s - %s", list, util.CleanMinecraftTags(player.NameFormatted), player.Team)
 			}
 
 			fields = append(fields, &discordgo.MessageEmbedField{
