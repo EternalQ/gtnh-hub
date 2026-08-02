@@ -1,0 +1,7 @@
+port: "5665"
+debug: false
+
+discord:
+  admin_role_id: ""
+  pinned_msg: ""
+  player_ava_url: ""

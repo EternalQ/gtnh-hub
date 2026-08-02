@@ -63,7 +63,7 @@ func (s *Server) dsHandler(sess *discordgo.Session, m *discordgo.MessageCreate) 
 	})
 }
 
-func (s *Server) onlineRefresher(sess *discordgo.Session, chanId, msgId string) {
+func (s *Server) discordUpdater() {
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
@@ -92,7 +92,7 @@ func (s *Server) onlineRefresher(sess *discordgo.Session, chanId, msgId string) 
 				continue
 			}
 
-			list := fmt.Sprintf("%d игрок(-а, -ов):\n", len(server.OnlinePlayers))
+			list := fmt.Sprintf("**%d игрок(-а, -ов)**:	", len(server.OnlinePlayers))
 			teams := make(map[string]struct{})
 			for _, player := range server.OnlinePlayers {
 				teams[player.Team] = struct{}{}
@@ -105,15 +105,7 @@ func (s *Server) onlineRefresher(sess *discordgo.Session, chanId, msgId string) 
 			})
 		}
 
-		// TODO: take from config
-		desc := fmt.Sprintf("Общий онлайн игрков: %d.\nИнформация обновляется раз 10 сек.\nСлоты на серверах измеряются в командах (SU Teams).",
-			s.game.GetAllPlayersCount())
-		msg := &discordgo.MessageEmbed{
-			Title:       "Статус серверов",
-			Description: desc,
-			Fields:      fields,
-		}
-		if _, err := sess.ChannelMessageEditEmbed(chanId, msgId, msg); err != nil {
+		if err := s.ds.UpdatePinned(s.game.GetAllPlayersCount(), fields); err != nil {
 			slog.Error("Discord command error", slog.String("err", err.Error()))
 		}
 	}
@@ -121,7 +113,7 @@ func (s *Server) onlineRefresher(sess *discordgo.Session, chanId, msgId string) 
 
 func (s *Server) handleCommand(sess *discordgo.Session, m *discordgo.MessageCreate) {
 	slog.Info("Recieved discord command", slog.String("cmd", m.Content), slog.String("caller", m.Author.Username))
-	if !slices.Contains(m.Member.Roles, s.ds.AdminRoleId) {
+	if !slices.Contains(m.Member.Roles, s.ds.AdminRoleID) {
 		_, err := sess.ChannelMessageSendReply(s.ds.WebhookChan, "Недостаточно прав", m.Reference())
 		if err != nil {
 			slog.Error("Discord commands reject", slog.String("err", err.Error()))

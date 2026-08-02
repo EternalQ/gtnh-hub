@@ -4,10 +4,11 @@ services:
     container_name: gtnh-hub
     restart: unless-stopped
     environment:
-      PORT: 5665
-      DS_BOT_TOKEN: bot_token
-      DS_WH_ID: webhook_id
-      DS_WH_TOKEN: webhook_token
-      PLAYER_AVA_URL: avatar_url
+      # CONFIG_PATH: /root/config.yaml
+      DISCORD_BOT_TOKEN: bot_token
+      DISCORD_WEBHOOK_ID: webhook_id
+      DISCORD_WEBHOOK_TOKEN: webhook_token
+    volumes:
+      - ./config.yaml:/root/config.yaml:ro
     ports:
       - 5665:5665

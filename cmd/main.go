@@ -10,57 +10,29 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/EternalQ/gtnh-hub/internal/config"
 	"github.com/EternalQ/gtnh-hub/internal/discord"
 	"github.com/EternalQ/gtnh-hub/internal/hub"
 	"github.com/EternalQ/gtnh-hub/internal/server"
-	"github.com/spf13/viper"
 )
-
-var (
-	port  string
-	debug bool
-
-	dsBotToken   string
-	dsWhId       string
-	dsWhToken    string
-	playerAvaUrl string
-	adminRoleId  string
-	dsPinnedMsg  string
-)
-
-func init() {
-	viper.SetDefault("PORT", "5665")
-	viper.SetDefault("DEBUG", false)
-
-	viper.AutomaticEnv()
-
-	port = viper.GetString("PORT")
-	debug = viper.GetBool("DEBUG")
-
-	dsBotToken = viper.GetString("DS_BOT_TOKEN")
-	dsWhId = viper.GetString("DS_WH_ID")
-	dsWhToken = viper.GetString("DS_WH_TOKEN")
-	adminRoleId = viper.GetString("DS_ADMIN_ROLE_ID")
-	dsPinnedMsg = viper.GetString("DS_PINNED_MSG")
-	playerAvaUrl = viper.GetString("PLAYER_AVA_URL")
-
-	if len(dsBotToken) == 0 || len(dsWhId) == 0 {
-		log.Fatal("check discord credentials")
-	}
-}
 
 func main() {
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Config: %s", err.Error())
+	}
+
 	level := slog.LevelInfo
-	if debug {
+	if cfg.Debug {
 		level = slog.LevelDebug
 	}
 	logH := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level:     level,
-		AddSource: debug,
+		AddSource: cfg.Debug,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			if a.Key == slog.TimeKey {
 				t := a.Value.Time().In(time.FixedZone("GMT+3", 3*60*60))
-				if debug {
+				if cfg.Debug {
 					return slog.Time(slog.TimeKey, t)
 				}
 				return slog.String(slog.TimeKey, t.Format("2006-01-02 15:04:05"))
@@ -70,7 +42,7 @@ func main() {
 	})
 	slog.SetDefault(slog.New(logH))
 
-	ds, err := discord.NewDiscord(dsBotToken, dsWhId, dsWhToken, playerAvaUrl, adminRoleId, dsPinnedMsg)
+	ds, err := discord.NewDiscord(cfg.Discord)
 	if err != nil {
 		slog.Error("Discord creation", slog.String("err", err.Error()))
 	}
@@ -82,14 +54,14 @@ func main() {
 	}
 
 	httpSrv := &http.Server{
-		Addr:         ":" + port,
+		Addr:         ":" + cfg.Port,
 		Handler:      srv.Routes(),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
 
 	go func() {
-		slog.Info("Server started", slog.String("port", port))
+		slog.Info("Server started", slog.String("port", cfg.Port))
 		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Listen error: %v", err)
 		}

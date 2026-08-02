@@ -47,7 +47,7 @@ func (s *Server) handleGtnh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := msg.Origin
-	s.game.GameServers[id] = &p.GameServer
+	s.game.SetServer(id, &p.GameServer)
 
 	// TODO: take message from config
 	s.hub.SendRaw(id, hub.ActionChat, &hub.ChatMessage{Sender: "", Text: "[" + id + "] сервер подключен!"})
@@ -72,7 +72,7 @@ func (s *Server) handleGtnh(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 		defer func() {
-			s.game.GameServers[id] = nil
+			s.game.SetServer(id, nil)
 			s.hub.Unregister(id)
 			conn.Close()
 		}()

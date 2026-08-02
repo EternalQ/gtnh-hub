@@ -28,9 +28,11 @@ func NewServer(ds *discord.Discord, hub *hub.Hub) (*Server, error) {
 		game: game.NewInstance(),
 	}
 
-	if err := ds.Setup(s.dsConnect, s.dsHandler, s.dsDisconnect, s.onlineRefresher); err != nil {
+	if err := ds.Setup(s.dsConnect, s.dsHandler, s.dsDisconnect); err != nil {
 		return nil, err
 	}
+
+	go s.discordUpdater()
 
 	return s, nil
 }
