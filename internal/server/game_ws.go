@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"net"
 	"net/http"
 
 	"github.com/EternalQ/gtnh-hub/internal/hub"
@@ -47,7 +48,9 @@ func (s *Server) handleGtnh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := msg.Origin
-	s.game.SetServer(id, &p.GameServer)
+	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+	gs := s.game.Connect(id, ip, p.RConPort)
+	gs.SetStat(&p.ServerStat)
 
 	// TODO: take message from config
 	s.hub.SendRaw(id, hub.ActionChat, &hub.ChatMessage{Sender: "", Text: "[" + id + "] сервер подключен!"})
@@ -72,7 +75,7 @@ func (s *Server) handleGtnh(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 		defer func() {
-			s.game.SetServer(id, nil)
+			s.game.Disconnect(id)
 			s.hub.Unregister(id)
 			conn.Close()
 		}()
@@ -122,7 +125,7 @@ func (s *Server) handleGtnh(w http.ResponseWriter, r *http.Request) {
 					conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(4002, "bad payload"))
 					return
 				}
-				s.game.SetServer(msg.Origin, &p.GameServer)
+				gs.SetStat(&p.ServerStat)
 			default:
 				slog.Warn("GTNH-ws unimplemented action handler", slog.String("action", msg.Action))
 			}

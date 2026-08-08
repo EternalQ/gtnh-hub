@@ -5,15 +5,17 @@ import (
 	"os"
 
 	"github.com/EternalQ/gtnh-hub/internal/discord"
+	"github.com/EternalQ/gtnh-hub/internal/game"
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
 const defaultConfigPath = "config.yaml"
 
 type Config struct {
-	Port    string         `yaml:"port" env:"PORT" env-default:"5665"`
-	Debug   bool           `yaml:"debug" env:"DEBUG" env-default:"false"`
-	Discord discord.Config `yaml:"discord"`
+	Port    string          `yaml:"port" env:"PORT" env-default:"5665"`
+	Debug   bool            `yaml:"debug" env:"DEBUG" env-default:"false"`
+	Discord discord.Config  `yaml:"discord"`
+	Game    game.GameConfig `yaml:"game"`
 }
 
 // Env vars always override the file, so secrets never need to live in it.

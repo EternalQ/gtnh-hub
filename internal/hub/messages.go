@@ -21,7 +21,9 @@ type Message struct {
 }
 
 type InfoMessage struct {
-	game.GameServer
+	game.ServerStat
+
+	RConPort int `json:"rconPort"`
 }
 
 type ChatMessage struct {

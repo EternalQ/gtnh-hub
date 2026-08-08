@@ -12,6 +12,7 @@ import (
 
 	"github.com/EternalQ/gtnh-hub/internal/config"
 	"github.com/EternalQ/gtnh-hub/internal/discord"
+	"github.com/EternalQ/gtnh-hub/internal/game"
 	"github.com/EternalQ/gtnh-hub/internal/hub"
 	"github.com/EternalQ/gtnh-hub/internal/server"
 )
@@ -47,8 +48,10 @@ func main() {
 		slog.Error("Discord creation", slog.String("err", err.Error()))
 	}
 
+	mcs := game.NewMCSClient(cfg.Game)
+
 	hub := hub.NewHub()
-	srv, err := server.NewServer(ds, hub)
+	srv, err := server.NewServer(ds, mcs, hub)
 	if err != nil {
 		log.Fatalf("Server creation: %s", err.Error())
 	}

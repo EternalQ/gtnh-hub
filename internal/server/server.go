@@ -17,14 +17,16 @@ type Server struct {
 	r    *mux.Router
 	hub  *hub.Hub
 	ds   *discord.Discord
+	mcs  *game.MCSClient
 	game *game.Instance
 }
 
-func NewServer(ds *discord.Discord, hub *hub.Hub) (*Server, error) {
+func NewServer(ds *discord.Discord, mcs *game.MCSClient, hub *hub.Hub) (*Server, error) {
 	s := &Server{
 		hub:  hub,
 		r:    mux.NewRouter(),
 		ds:   ds,
+		mcs:  mcs,
 		game: game.NewInstance(),
 	}
 
@@ -32,7 +34,7 @@ func NewServer(ds *discord.Discord, hub *hub.Hub) (*Server, error) {
 		return nil, err
 	}
 
-	go s.discordUpdater()
+	go s.dsPinMsgUpdater()
 
 	return s, nil
 }

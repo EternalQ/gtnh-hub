@@ -1,18 +1,27 @@
 package game
 
 import (
-	"encoding/json"
+	"maps"
+	"net"
+	"strconv"
 	"sync"
+	"sync/atomic"
 )
 
 type Instance struct {
-	mu        sync.Mutex
-	jsonCache []byte
+	mu sync.RWMutex
 
-	GameServers map[string]*GameServer `json:"gameServers"`
+	GameServers map[string]*GameServer
 }
 
 type GameServer struct {
+	IP       string
+	RConPort int
+
+	stat atomic.Pointer[ServerStat]
+}
+
+type ServerStat struct {
 	OnlinePlayers []Player `json:"players"`
 	Slots         int      `json:"slots"`
 	Mspt          float32  `json:"mspt"`
@@ -21,45 +30,75 @@ type GameServer struct {
 
 func NewInstance() *Instance {
 	return &Instance{
-		jsonCache:   []byte("{}"),
 		GameServers: make(map[string]*GameServer),
 	}
 }
 
-func (i *Instance) GetJSON() []byte {
+func (i *Instance) Connect(id, ip string, rconPort int) *GameServer {
+	gs := &GameServer{IP: ip, RConPort: rconPort}
+
 	i.mu.Lock()
-	defer i.mu.Unlock()
-	buf := make([]byte, len(i.jsonCache))
-	copy(buf, i.jsonCache)
-	return buf
+	i.GameServers[id] = gs
+	i.mu.Unlock()
+
+	return gs
 }
 
-func (i *Instance) Copy() (*Instance, error) {
-	new := new(Instance)
-	if err := json.Unmarshal(i.GetJSON(), new); err != nil {
-		return nil, err
+func (i *Instance) Disconnect(id string) {
+	i.mu.RLock()
+	gs, ok := i.GameServers[id]
+	i.mu.RUnlock()
+
+	if ok {
+		gs.SetStat(nil)
 	}
-	return new, nil
 }
 
-func (i *Instance) GetAllPlayersCount() int {
+func (i *Instance) Snapshot() map[string]*GameServer {
+	i.mu.RLock()
+	defer i.mu.RUnlock()
+
+	out := make(map[string]*GameServer, len(i.GameServers))
+	maps.Copy(out, i.GameServers)
+	return out
+}
+
+func (i *Instance) ServerIP(id string) (string, bool) {
+	i.mu.RLock()
+	gs, ok := i.GameServers[id]
+	i.mu.RUnlock()
+
+	if !ok {
+		return "", false
+	}
+	return gs.IP, true
+}
+
+func (i *Instance) RConAddr(id string) (string, bool) {
+	i.mu.RLock()
+	gs, ok := i.GameServers[id]
+	i.mu.RUnlock()
+
+	if !ok || gs.IP == "" || gs.RConPort == 0 {
+		return "", false
+	}
+	return net.JoinHostPort(gs.IP, strconv.Itoa(gs.RConPort)), true
+}
+
+func (i *Instance) AllPlayersCount() int {
 	count := 0
-	for _, v := range i.GameServers {
-		count += len(v.OnlinePlayers)
+	for _, gs := range i.Snapshot() {
+		if stat := gs.Stat(); stat != nil {
+			count += len(stat.OnlinePlayers)
+		}
 	}
 	return count
 }
 
-func (i *Instance) SetServer(id string, server *GameServer) error {
-	i.mu.Lock()
-	defer i.mu.Unlock()
-	i.GameServers[id] = server
+func (gs *GameServer) Stat() *ServerStat {
+	return gs.stat.Load()
+}
 
-	data, err := json.Marshal(i)
-	if err != nil {
-		return err
-	}
-
-	i.jsonCache = data
-	return nil
+func (gs *GameServer) SetStat(s *ServerStat) {
+	gs.stat.Store(s)
 }

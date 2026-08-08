@@ -5,3 +5,9 @@ discord:
   admin_role_id: ""
   pinned_msg: ""
   player_ava_url: ""
+  command_roles:
+    check: "roleId1,roleId2"
+
+game:
+  instances:
+    main: "instanceId,daemonId"

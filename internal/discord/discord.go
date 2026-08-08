@@ -11,12 +11,29 @@ import (
 )
 
 type Config struct {
-	BotToken     string `yaml:"bot_token" env:"DISCORD_BOT_TOKEN"`
-	WebhookID    string `yaml:"webhook_id" env:"DISCORD_WEBHOOK_ID"`
-	WebhookToken string `yaml:"webhook_token" env:"DISCORD_WEBHOOK_TOKEN"`
-	AdminRoleID  string `yaml:"admin_role_id" env:"DISCORD_ADMIN_ROLE_ID"`
-	PinnedMsg    string `yaml:"pinned_msg" env:"DISCORD_PINNED_MSG"`
-	PlayerAvaURL string `yaml:"player_ava_url" env:"DISCORD_PLAYER_AVA_URL"`
+	BotToken     string            `yaml:"bot_token" env:"DISCORD_BOT_TOKEN"`
+	WebhookID    string            `yaml:"webhook_id" env:"DISCORD_WEBHOOK_ID"`
+	WebhookToken string            `yaml:"webhook_token" env:"DISCORD_WEBHOOK_TOKEN"`
+	AdminRoleID  string            `yaml:"admin_role_id" env:"DISCORD_ADMIN_ROLE_ID"`
+	PinnedMsg    string            `yaml:"pinned_msg" env:"DISCORD_PINNED_MSG"`
+	PlayerAvaURL string            `yaml:"player_ava_url" env:"DISCORD_PLAYER_AVA_URL"`
+	CommandRoles map[string]string `yaml:"command_roles"`
+}
+
+func (c Config) CommandRoleIDs(cmd string) []string {
+	raw, ok := c.CommandRoles[cmd]
+	if !ok {
+		return nil
+	}
+
+	parts := strings.Split(raw, ",")
+	ids := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p = strings.TrimSpace(p); p != "" {
+			ids = append(ids, p)
+		}
+	}
+	return ids
 }
 
 type Discord struct {
