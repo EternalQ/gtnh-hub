@@ -43,6 +43,16 @@ func main() {
 	})
 	slog.SetDefault(slog.New(logH))
 
+	slog.Info("Config loaded",
+		slog.String("port", cfg.Port),
+		slog.Bool("debug", cfg.Debug),
+		slog.String("discord.admin_role_id", cfg.Discord.AdminRoleID),
+		slog.String("discord.pinned_msg", cfg.Discord.PinnedMsg),
+		slog.Int("discord.command_roles", len(cfg.Discord.CommandRoles)),
+		slog.String("game.mcs_base_url", cfg.Game.MCSBaseURL),
+		slog.Int("game.instances", len(cfg.Game.Instances)),
+	)
+
 	ds, err := discord.NewDiscord(cfg.Discord)
 	if err != nil {
 		slog.Error("Discord creation", slog.String("err", err.Error()))

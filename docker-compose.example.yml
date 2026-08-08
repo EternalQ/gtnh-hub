@@ -8,6 +8,9 @@ services:
       DISCORD_BOT_TOKEN: bot_token
       DISCORD_WEBHOOK_ID: webhook_id
       DISCORD_WEBHOOK_TOKEN: webhook_token
+      MCS_BASE_URL: http://host.docker.internal:23333
+      MCS_API_KEY: mcs_api_key
+      RCON_PASSWORD: rcon_password
     volumes:
       - ./config.yaml:/root/config.yaml:ro
     ports:

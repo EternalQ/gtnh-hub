@@ -52,6 +52,12 @@ func (s *Server) handleGtnh(w http.ResponseWriter, r *http.Request) {
 	gs := s.game.Connect(id, ip, p.RConPort)
 	gs.SetStat(&p.ServerStat)
 
+	slog.Info("GTNH-ws connected",
+		slog.String("origin", id),
+		slog.String("ip", ip),
+		slog.Int("rconPort", p.RConPort),
+	)
+
 	// TODO: take message from config
 	s.hub.SendRaw(id, hub.ActionChat, &hub.ChatMessage{Sender: "", Text: "[" + id + "] сервер подключен!"})
 

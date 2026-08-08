@@ -150,7 +150,7 @@ func (s *Server) handleCheckCommand(sess *discordgo.Session, m *discordgo.Messag
 	result, err := s.checkGameInstance(tag, instanceID, daemonID)
 	if err != nil {
 		slog.Error("Discord check command", slog.String("tag", tag), slog.String("err", err.Error()))
-		sess.ChannelMessageSendReply(m.ChannelID, "Ошибка проверки "+tag+": "+err.Error(), m.Reference())
+		sess.ChannelMessageSendReply(m.ChannelID, "Ошибка проверки "+tag, m.Reference())
 		return
 	}
 
@@ -207,7 +207,7 @@ func (s *Server) dsPinMsgUpdater() {
 		}
 
 		if err := s.ds.UpdatePinned(s.game.AllPlayersCount(), fields); err != nil {
-			slog.Error("Discord command error", slog.String("err", err.Error()))
+			slog.Error("Discord update pinned error", slog.String("err", err.Error()))
 		}
 	}
 }
