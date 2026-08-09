@@ -110,7 +110,7 @@ func (s *Server) handleGtnh(w http.ResponseWriter, r *http.Request) {
 					s.hub.SendRaw(
 						id,
 						hub.ActionChat,
-						&hub.ChatMessage{Sender: "", Text: "[" + id + "] Что-то пошлое не так... Соединение с сервером потеряно."},
+						&hub.ChatMessage{Sender: "", Text: "[" + id + "] Что-то пошло не так... Соединение с сервером потеряно."},
 					)
 				}
 				return

@@ -174,12 +174,20 @@ func (s *Server) dsPinMsgUpdater() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		fields := make([]*discordgo.MessageEmbedField, 0)
-		for id, gs := range s.game.Snapshot() {
-			stat := gs.Stat()
+		snapshot := s.game.Snapshot()
+
+		ids := make([]string, 0, len(snapshot))
+		for id := range snapshot {
+			ids = append(ids, id)
+		}
+		slices.Sort(ids)
+
+		fields := make([]*discordgo.MessageEmbedField, 0, len(ids))
+		for _, id := range ids {
+			stat := snapshot[id].Stat()
 			if stat == nil {
 				fields = append(fields, &discordgo.MessageEmbedField{
-					Name:  fmt.Sprintf("%s - выключен", id),
+					Name:  fmt.Sprintf("%s — выключен", id),
 					Value: "Здесь пусто(",
 				})
 				continue
@@ -187,22 +195,28 @@ func (s *Server) dsPinMsgUpdater() {
 
 			if len(stat.OnlinePlayers) == 0 {
 				fields = append(fields, &discordgo.MessageEmbedField{
-					Name:  fmt.Sprintf("%s (%.2f TPS) - 0/%d", id, stat.Tps, stat.Slots),
+					Name:  fmt.Sprintf("%s (%.2f TPS) — 0/%d", id, stat.Tps, stat.Slots),
 					Value: "Здесь пусто(",
 				})
 				continue
 			}
 
-			list := fmt.Sprintf("**%d игрок(-а, -ов)**:	", len(stat.OnlinePlayers))
+			players := slices.Clone(stat.OnlinePlayers)
+			slices.SortFunc(players, func(a, b game.Player) int {
+				return strings.Compare(a.NameFormatted, b.NameFormatted)
+			})
+
 			teams := make(map[string]struct{})
-			for _, player := range stat.OnlinePlayers {
+			var list strings.Builder
+			list.WriteString(fmt.Sprintf("Игроков: %d\n", len(players)))
+			for _, player := range players {
 				teams[player.Team] = struct{}{}
-				list = fmt.Sprintf("%s\n%s - %s", list, util.CleanMinecraftTags(player.NameFormatted), player.Team)
+				list.WriteString(fmt.Sprintf("• %s — %s\n", util.CleanMinecraftTags(player.NameFormatted), player.Team))
 			}
 
 			fields = append(fields, &discordgo.MessageEmbedField{
-				Name:  fmt.Sprintf("%s (%.2f TPS) - %d/%d", id, stat.Tps, len(teams), stat.Slots),
-				Value: list,
+				Name:  fmt.Sprintf("%s (%.2f TPS) — %d/%d", id, stat.Tps, len(teams), stat.Slots),
+				Value: strings.TrimRight(list.String(), "\n"),
 			})
 		}
 

@@ -73,7 +73,7 @@ func (d *Discord) Setup(handlers ...any) error {
 
 func (d *Discord) UpdatePinned(count int, fields []*discordgo.MessageEmbedField) error {
 	desc := fmt.Sprintf(
-		"Общий онлайн игрков: %d.\nИнформация обновляется раз 10 сек.\nСлоты на серверах измеряются в командах (SU Teams).",
+		"Общий онлайн игроков: %d.\nИнформация обновляется раз 10 сек.\nСлоты на серверах измеряются в командах (SU Teams).",
 		count)
 	msg := &discordgo.MessageEmbed{
 		Title:       "Статус серверов",
