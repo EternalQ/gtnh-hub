@@ -37,18 +37,28 @@ func (s *Server) checkGameInstance(tag, instanceID, daemonID string) (CheckResul
 	}
 
 	start := time.Now()
-	if err := game.PingRCon(addr, s.mcs.RConPassword); err == nil {
+	err = game.PingRCon(addr, s.mcs.RConPassword)
+	for attempts := 0; err != nil && attempts < 3; attempts++ {
+		time.Sleep(1 * time.Second)
+		err = game.PingRCon(addr, s.mcs.RConPassword)
+	}
+	if err == nil {
 		result.RConOk = true
 		result.RConLatency = time.Since(start)
 		return result, nil
 	}
 
 	slog.Warn("Game instance running but unreachable via RCon, killing",
-		slog.String("instance", tag))
+		slog.String("instance", tag),
+		slog.String("err", err.Error()),
+	)
 
 	result.Killed = true
 	if err := s.mcs.KillInstance(ctx, daemonID, instanceID); err != nil {
 		return result, fmt.Errorf("kill instance: %w", err)
+	}
+	if err := s.mcs.StartInstance(ctx, daemonID, instanceID); err != nil {
+		return result, fmt.Errorf("start instance: %w", err)
 	}
 	return result, nil
 }

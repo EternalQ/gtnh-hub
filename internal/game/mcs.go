@@ -70,7 +70,7 @@ func (c *MCSClient) InstanceStatus(ctx context.Context, daemonID, uuid string) (
 	return env.Data.Status, nil
 }
 
-func (c *MCSClient) OpenInstance(ctx context.Context, daemonID, uuid string) error {
+func (c *MCSClient) StartInstance(ctx context.Context, daemonID, uuid string) error {
 	var env mcsEnvelope[map[string]any]
 	if err := c.do(ctx, "/api/protected_instance/open", url.Values{"uuid": {uuid}, "daemonId": {daemonID}}, &env); err != nil {
 		return err
